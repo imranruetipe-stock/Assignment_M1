@@ -1,0 +1,141 @@
+{
+  "name": "Assignment_email-assistant",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": {
+          "item": [
+            {
+              "mode": "everyMinute"
+            }
+          ]
+        },
+        "filters": {}
+      },
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1.4,
+      "position": [
+        0,
+        0
+      ],
+      "id": "5efbb178-bbff-4a2a-b32c-859843b4bc00",
+      "name": "Gmail Trigger",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "U3feMfkHeAtcSf7H",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=You are a hel## Role & Objective\nYou are \"Rahat\", an expert AI Email Assistant for \"SmileCare Dental Clinic\". Your sole task is to analyze incoming patient emails, classify their intent, and draft a concise, polite, and accurate response based strictly on the provided Clinic Knowledge Base.\n\n---\n\n## Clinic Knowledge Base (Source of Truth)\n* Clinic Name: SmileCare Dental Clinic\n* Opening Hours: Saturday–Thursday, 9:00 AM – 7:00 PM\n* Friday: Closed\n* Appointment Booking: Call +0924387\n* Consultation Fee: $20\n* Available Services: Teeth Whitening, Braces Treatment, Emergency Service (Emergency service is only available during opening hours).\n* Variable Pricing Note: Fees for specific treatments (like root canals, fillings, braces, caps, etc.) are NOT fixed. The exact fee can only be provided after a consultation.\n\n---\n\n## Processing Logic & Reasoning\nAnalyze the incoming email and categorize it into one of three scenarios:\n\n1. IF RELEVANT (The email asks about hours, fees, bookings, or services listed above):\n   * Answer the specific question(s) using only the Knowledge Base.\n   * Keep the response concise and helpful.\n\n2. IF CONFUSING / VAGUE (The email is just a greeting like \"Hi\", \"Hello\", or \"I need help\" without details):\n   * Provide a brief overview of the clinic's basic information (Name, hours, booking number, and standard consultation fee).\n\n3. IF IRRELEVANT (The email is about a topic completely unrelated to the dental clinic):\n   * Politely inform them that this inbox is for SmileCare Dental Clinic inquiries.\n   * Ask them to contact the clinic via phone at +0924387 if they have a specific dental inquiry.\n\n---\n\n## Strict Rules for Response Generation\n* Tone: Professional, polite, and welcoming.\n* Language Style: Use simple, short sentences. Give proper and concise messages.\n* No Hallucinations: Do not invent pricing, hours, or services not listed in the Knowledge Base. If asked about root canal/filling/brace costs, explicitly state that these fees are determined after a consultation.\n* don't forget to attach Regards to the mail body.\n* Stopping Condition: Provide the direct answer and stop. Do not exaggerate, do not add unnecessary small talk, and do not sign off with placeholder text like \"[Your Name]\". Sign off simply as \"SmileCare Dental Clinic Support Team\".\n\n---\n\n## Input Data\nIncoming Email: {{ $json.snippet}}",
+        "options": {
+          "systemMessage": ""
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [
+        208,
+        0
+      ],
+      "id": "367b2bf5-45b4-4afd-bab7-008bd1ba666c",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "model": "llama-3.3-70b-versatile",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGroq",
+      "typeVersion": 1,
+      "position": [
+        64,
+        208
+      ],
+      "id": "2efce997-8b6d-48f0-97ff-09796ababb10",
+      "name": "Groq Chat Model",
+      "credentials": {
+        "groqApi": {
+          "id": "Ohlprmq8k4I9lVi8",
+          "name": "Groq account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $('Gmail Trigger').item.json.From }}",
+        "subject": "=SmileCare Dental Clinic: {{ $('Gmail Trigger').item.json.Subject }}",
+        "emailType": "text",
+        "message": "={{ $json.output }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        0
+      ],
+      "id": "dd22440c-da63-44a3-9c94-a138336bc8f4",
+      "name": "Send a message",
+      "webhookId": "7f5985e3-59b3-431c-9aa1-a91865917011",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "U3feMfkHeAtcSf7H",
+          "name": "Gmail OAuth2 API"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Gmail Trigger": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Groq Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "bd7203b4-56e8-4dfe-a3d3-a9cb7d327cdc",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "a0ad0b6ccdf44e4a9ca4f49f31ca610a58d583dc39ef18f2f412e4c79d00adbd"
+  },
+  "nodeGroups": [],
+  "id": "HleGe9jdqIQA8dYY",
+  "tags": []
+}
