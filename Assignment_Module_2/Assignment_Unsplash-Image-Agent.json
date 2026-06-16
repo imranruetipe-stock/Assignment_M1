@@ -1,0 +1,141 @@
+{
+  "name": "Assignment_Unsplash-Image-Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "95bdd28e-7a42-4db6-ad54-ba77bd2e44a5",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "d3c472e8-42f2-4c0a-971e-1454b1727305",
+      "name": "Webhook",
+      "webhookId": "95bdd28e-7a42-4db6-ad54-ba77bd2e44a5"
+    },
+    {
+      "parameters": {
+        "url": "=https://api.unsplash.com//search/photos",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "query",
+              "value": "={{ $json.query.q }}"
+            },
+            {
+              "name": "per_page",
+              "value": "3"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Client-ID RxE7N0JbSTnQG6Ue1LT1T0u9jM9vtTQsN_iHV9rsbUc"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        208,
+        0
+      ],
+      "id": "c36d5681-52cb-445e-ba0d-d780dcfc4661",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "8669ce66-c91b-40fd-8ba4-a81fc5f9dc1c",
+              "name": "images",
+              "value": "={{ $json.results.map(r => r.urls.full) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        416,
+        0
+      ],
+      "id": "eca82014-e571-4e32-860c-b7b0c7cabc2e",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.5,
+      "position": [
+        624,
+        0
+      ],
+      "id": "72358d05-dc4c-4c48-aa80-66e8e3b4a0ec",
+      "name": "Respond to Webhook"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "6b4aa6d0-5748-4a28-a850-fec985eb921f",
+  "meta": {
+    "instanceId": "a0ad0b6ccdf44e4a9ca4f49f31ca610a58d583dc39ef18f2f412e4c79d00adbd"
+  },
+  "nodeGroups": [],
+  "id": "cRVYXtcu2OWMfroG",
+  "tags": []
+}
