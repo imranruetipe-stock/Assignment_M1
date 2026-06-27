@@ -1,0 +1,227 @@
+{
+  "name": "My workflow 2",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "44a26b57-6981-4134-9ba2-b1eb09fb5d77",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1P4s3ZdaakniTuuRccuw1qC4JN44cWSNC7XkiPz4ArG4/edit?gid=794591927#gid=794591927",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 794591927,
+          "mode": "list",
+          "cachedResultName": "Worksheet",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P4s3ZdaakniTuuRccuw1qC4JN44cWSNC7XkiPz4ArG4/edit#gid=794591927"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        208,
+        0
+      ],
+      "id": "92512297-263e-495c-bf19-cbd5e43d84ed",
+      "name": "Get row(s) in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "cuF3pgoRaUefw6zN",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const items = $input.all();\nconst cleanedData = [];\nconst seenEmails = new Set();\nconst seenPhones = new Set();\n\n// Counters for our Summary Report\nlet totalImported = items.length;\nlet removedEmpty = 0;\nlet removedDuplicate = 0;\nlet removedInvalidEmail = 0;\nlet removedInvalidPhone = 0;\nlet removedInvalidDate = 0;\n\nlet customerCounter = 1;\n\nfor (const item of items) {\n  let name = item.json['Full Name'] ? String(item.json['Full Name']) : '';\n  let email = item.json['Email'] ? String(item.json['Email']) : '';\n  let phone = item.json['Phone No'] ? String(item.json['Phone No']) : '';\n  let city = item.json['City'] ? String(item.json['City']) : '';\n  let regDate = item.json['Registration Date'] ? String(item.json['Registration Date']) : '';\n\n  // ❌ Step 2: Remove Empty Rows\n  if (!name.trim() && !email.trim() && !phone.trim()) {\n    removedEmpty++;\n    continue; \n  }\n\n  // ✂️ Step 3: Trim Extra Spaces\n  name = name.trim().replace(/\\s+/g, ' ');\n  email = email.trim().replace(/\\s+/g, '');\n  phone = phone.trim().replace(/\\s+/g, '');\n  city = city.trim().replace(/\\s+/g, ' ');\n\n  // 🔠 Step 4: Standardize Capitalization\n  const toProperCase = (str) => str.toLowerCase().replace(/\\b\\w/g, char => char.toUpperCase());\n  name = toProperCase(name);\n  city = toProperCase(city);\n\n  // 📧 Step 5: Validate Email Addresses\n  const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n  if (!emailRegex.test(email)) {\n    removedInvalidEmail++;\n    continue; \n  }\n\n  // 📱 Step 6: Validate Phone Numbers\n  let cleanPhone = phone.replace(/[-+()]/g, '');\n  if (cleanPhone.startsWith('8801')) {\n    cleanPhone = cleanPhone.substring(2);\n  }\n  const bdPhoneRegex = /^01[3-9]\\d{8}$/;\n  if (!bdPhoneRegex.test(cleanPhone)) {\n    removedInvalidPhone++;\n    continue; \n  }\n\n  // 📅 Step 7: Standardize Dates\n  let formattedDate = '';\n  if (regDate) {\n    const parsedDate = Date.parse(regDate);\n    if (!isNaN(parsedDate)) {\n      const d = new Date(parsedDate);\n      formattedDate = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;\n    } else {\n      removedInvalidDate++;\n      continue; \n    }\n  } else {\n    removedInvalidDate++;\n    continue; \n  }\n\n  // 👥 Step 8: Remove Duplicate Records\n  if (seenEmails.has(email.toLowerCase()) || seenPhones.has(cleanPhone)) {\n    removedDuplicate++;\n    continue; \n  }\n  seenEmails.add(email.toLowerCase());\n  seenPhones.add(cleanPhone);\n\n  // 🎁 Bonus 1: Generate Customer ID (e.g., CUST-0001, CUST-0002)\n  const customerId = `CUST-${String(customerCounter).padStart(4, '0')}`;\n  customerCounter++;\n\n  // Step 9: Save the customer record\n  cleanedData.push({\n    json: {\n      'Customer ID': customerId,\n      'Full Name': name,\n      'Email': email.toLowerCase(),\n      'Phone': cleanPhone,\n      'City': city,\n      'Registration Date': formattedDate\n    }\n  });\n}\n\n// 🎁 Bonus 2: Create a Summary Report Row\n// We calculate total rows removed across all issues\nlet totalRemoved = removedEmpty + removedDuplicate + removedInvalidEmail + removedInvalidPhone + removedInvalidDate;\n\ncleanedData.push({\n  json: {\n    'Customer ID': 'SUMMARY REPORT',\n    'Full Name': `Total Rows Imported: ${totalImported}`,\n    'Email': `Rows Removed (Empty): ${removedEmpty}`,\n    'Phone': `Duplicate Rows Removed: ${removedDuplicate}`,\n    'City': `Invalid Emails Removed: ${removedInvalidEmail} | Invalid Phones Removed: ${removedInvalidPhone}`,\n    'Registration Date': `Final Row Count: ${cleanedData.length}`\n  }\n});\n\nreturn cleanedData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        0
+      ],
+      "id": "e8b8edf4-026f-4705-94d0-fa9dad77511e",
+      "name": "Code in JavaScript"
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1P4s3ZdaakniTuuRccuw1qC4JN44cWSNC7XkiPz4ArG4/edit?gid=1452434894#gid=1452434894",
+          "mode": "url"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1452434894,
+          "mode": "list",
+          "cachedResultName": "CLean_customer",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1P4s3ZdaakniTuuRccuw1qC4JN44cWSNC7XkiPz4ArG4/edit#gid=1452434894"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "Full Name",
+              "displayName": "Full Name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Email",
+              "displayName": "Email",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Phone",
+              "displayName": "Phone",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "City",
+              "displayName": "City",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "Registration Date",
+              "displayName": "Registration Date",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        624,
+        0
+      ],
+      "id": "85ca261c-d093-4563-97c3-2be978037875",
+      "name": "Append row in sheet",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "cuF3pgoRaUefw6zN",
+          "name": "Google Sheets OAuth2 API"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {
+          "fileName": "clean_customer.xlsx"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        832,
+        0
+      ],
+      "id": "e87baee5-0d61-4036-8590-54a7f3148514",
+      "name": "Convert to File"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Get row(s) in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get row(s) in sheet": {
+      "main": [
+        [
+          {
+            "node": "Code in JavaScript",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code in JavaScript": {
+      "main": [
+        [
+          {
+            "node": "Append row in sheet",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append row in sheet": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "95dd5b19-b18b-4700-8834-3dc3b1f3798e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "f787ba5b343936e42cf5ed44011c3e6bfbb827303da610cbbbb292804d3e636d"
+  },
+  "nodeGroups": [],
+  "id": "fWNDEchmZsxlkYhe",
+  "tags": []
+}
